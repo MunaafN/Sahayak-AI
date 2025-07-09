@@ -1,0 +1,84 @@
+# ================================
+# SAHAYAK AI PLATFORM - BACKEND CONFIGURATION
+# ================================
+
+# ---- APPLICATION SETTINGS ----
+APP_NAME=Sahayak AI Platform
+APP_VERSION=1.0.0
+DEBUG=true
+ENVIRONMENT=development
+
+# ---- SECURITY KEYS (GENERATE THESE!) ----
+# Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+SECRET_KEY=GENERATE_RANDOM_KEY_HERE
+JWT_SECRET_KEY=GENERATE_RANDOM_KEY_HERE
+JWT_ALGORITHM=HS256
+JWT_EXPIRATION_HOURS=24
+
+# ================================
+# GOOGLE CLOUD CONFIGURATION
+# ================================
+# Replace with your actual Google Cloud project ID
+GOOGLE_CLOUD_PROJECT_ID=sahayak-ai-platform
+GOOGLE_CLOUD_LOCATION=us-central1
+# Path to your service account credentials JSON file
+GOOGLE_APPLICATION_CREDENTIALS=./sahayak-credentials.json
+
+# ---- VERTEX AI CONFIGURATION ----
+VERTEX_AI_ENDPOINT=us-central1-aiplatform.googleapis.com
+VERTEX_AI_TEXT_MODEL=gemini-pro
+VERTEX_AI_VISION_MODEL=gemini-pro-vision
+VERTEX_AI_IMAGE_MODEL=imagegeneration@002
+
+# ---- SPEECH-TO-TEXT CONFIGURATION ----
+SPEECH_API_ENDPOINT=speech.googleapis.com
+SPEECH_LANGUAGE_CODES=en-US,hi-IN,mr-IN
+
+# ================================
+# FIREBASE CONFIGURATION
+# ================================
+# Get these from your sahayak-credentials.json file
+FIREBASE_PROJECT_ID=sahayak-ai-platform
+FIREBASE_PRIVATE_KEY_ID=COPY_FROM_JSON_FILE
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nCOPY_FROM_JSON_FILE\n-----END PRIVATE KEY-----\n"
+FIREBASE_CLIENT_EMAIL=sahayak-ai-service@sahayak-ai-platform.iam.gserviceaccount.com
+FIREBASE_CLIENT_ID=COPY_FROM_JSON_FILE
+FIREBASE_CLIENT_X509_CERT_URL=https://www.googleapis.com/robot/v1/metadata/x509/sahayak-ai-service%40sahayak-ai-platform.iam.gserviceaccount.com
+
+# ================================
+# STORAGE CONFIGURATION
+# ================================
+GOOGLE_CLOUD_STORAGE_BUCKET=sahayak-ai-platform.appspot.com
+UPLOAD_MAX_SIZE=10485760
+ALLOWED_FILE_TYPES=jpg,jpeg,png,gif,pdf,doc,docx,mp3,wav,ogg
+
+# ================================
+# AI SERVICE CONFIGURATION
+# ================================
+# OpenAI (optional fallback)
+OPENAI_API_KEY=your-openai-key-optional
+OPENAI_MODEL=gpt-3.5-turbo
+MAX_CONTENT_LENGTH=2000
+DEFAULT_TEMPERATURE=0.7
+DEFAULT_MAX_TOKENS=1000
+
+# ================================
+# DATABASE CONFIGURATION
+# ================================
+DATABASE_URL=sqlite:///./sahayak.db
+
+# ================================
+# NETWORKING & SECURITY
+# ================================
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
+ALLOWED_METHODS=GET,POST,PUT,DELETE,OPTIONS
+ALLOWED_HEADERS=*
+RATE_LIMIT_PER_MINUTE=60
+RATE_LIMIT_PER_HOUR=1000
+
+# ================================
+# DEMO MODE SETTINGS
+# ================================
+# Set to false to use real AI services
+DEMO_MODE=false
+MOCK_AI_RESPONSES=false 
