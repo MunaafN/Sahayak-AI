@@ -39,7 +39,7 @@ const Sidebar = () => {
           className="flex items-center hover:opacity-80 transition-opacity duration-200"
         >
           <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-            सहायक
+            Sahayak-AI
           </h1>
         </Link>
       </div>

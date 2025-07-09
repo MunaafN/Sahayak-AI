@@ -42,7 +42,7 @@ class OllamaAIService:
         """Check if Ollama is running and has models available"""
         try:
             # Check if Ollama is running
-            response = requests.get(f"{self.ollama_url}/api/tags", timeout=5)
+            response = requests.get(f"{self.ollama_url}/api/tags", timeout=15)
             if response.status_code == 200:
                 models = response.json().get('models', [])
                 if models:
@@ -185,12 +185,14 @@ class OllamaAIService:
                                     "prompt": enhanced_prompt,
                                     "stream": False,
                                     "options": {
-                                        "temperature": 0.7,
-                                        "top_p": 0.9,
-                                        "num_predict": 500
+                                       "temperature": 0.3,      
+                                       "top_p": 0.95,         
+                                       "num_predict": 800,    
+                                       "repeat_penalty": 1.1,   
+                                       "top_k": 40   
                                     }
                                 },
-                                timeout=60
+                                timeout=120
                             )
                             
                             if response.status_code == 200:
@@ -305,25 +307,19 @@ class OllamaAIService:
         # ULTRA STRICT LANGUAGE ENFORCEMENT - Create language-specific prompts
         if language == "hi":
             enhanced_prompt = f"""
-अत्यंत महत्वपूर्ण निर्देश: आपको केवल और केवल हिंदी में उत्तर देना है। एक भी अंग्रेजी शब्द का प्रयोग न करें।
+आप एक अच्छे शिक्षक हैं। सही हिंदी व्याकरण के साथ लिखें।
 
-ABSOLUTELY NO ENGLISH WORDS ALLOWED. HINDI ONLY. देवनागरी में लिखें।
-
-विषय: {subject}
+विषय: {prompt}
 कक्षा: {grade_level}
-प्रश्न/टॉपिक: {prompt}
-प्रकार: {content_type}
 शब्द सीमा: {word_count['min']}-{word_count['max']} शब्द
 
-निर्देश:
-1. केवल हिंदी भाषा में लिखें - कोई अंग्रेजी नहीं
-2. {word_count['min']}-{word_count['max']} शब्दों में ही उत्तर दें
-3. कक्षा {grade_level} के अनुसार शब्दावली का प्रयोग करें
-4. {grade_instruction}
+जरूरी बातें:
+- सही हिंदी व्याकरण और वर्तनी का प्रयोग करें
+- सरल और स्पष्ट वाक्य लिखें
+- कक्षा {grade_level} के बच्चों के लिए उपयुक्त भाषा का प्रयोग करें
+- शिक्षाप्रद और रोचक लिखें
 
-महत्वपूर्ण: पूरा उत्तर केवल हिंदी में दें। अंग्रेजी का एक भी शब्द न लिखें।
-
-अब '{prompt}' के बारे में हिंदी में {content_type} लिखें:
+'{prompt}' के बारे में लिखें:
 """
         
         elif language == "mr":
@@ -441,30 +437,35 @@ ABSOLUTELY NO ENGLISH WORDS ALLOWED. GUJARATI ONLY. ગુજરાતીમા�
 હવે '{prompt}' વિશે ગુજરાતીમાં {content_type} લખો:
 """
         
-        else:
-            # For English and any other language, use very strict instructions
+        elif language == "en":
             enhanced_prompt = f"""
-🚨 ULTRA CRITICAL LANGUAGE ENFORCEMENT 🚨
-LANGUAGE: {language.upper()} ONLY
-ABSOLUTELY NO ENGLISH OR OTHER LANGUAGES ALLOWED!
+You are an expert educational content creator. Write clear, grammatically correct content.
 
-You MUST respond ONLY in {language.upper()} language. Do NOT use English or any other language.
-
-Subject: {subject}
-Grade: {grade_level}
 Topic: {prompt}
-Type: {content_type}
-Word limit: {word_count['min']}-{word_count['max']} words EXACTLY
+Grade Level: {grade_level}  
+Content Type: {content_type}
+Word Limit: {word_count['min']}-{word_count['max']} words
 
-STRICT REQUIREMENTS:
-1. Language: {language.upper()} ONLY (zero English words allowed)
-2. Word count: {word_count['min']}-{word_count['max']} words (count each word carefully)
-3. Grade {grade_level} appropriate vocabulary and concepts
-4. {grade_instruction}
+Requirements:
+- Use perfect grammar and spelling
+- Use simple, clear sentences
+- Write for grade {grade_level} students
+- Be educational and engaging
+- Stay within word limit
 
-🚨 CRITICAL: Your entire response must be in {language.upper()} language. Count words carefully and stay within {word_count['min']}-{word_count['max']} words limit.
+Write about '{prompt}':
+"""
+        
+        else:
+            # For any other language, use simple instructions
+            enhanced_prompt = f"""
+Write educational content about: {prompt}
+- Language: {language}
+- Grade Level: {grade_level}
+- Word Limit: {word_count['min']}-{word_count['max']} words
+- Use correct grammar and simple language
 
-Now write {content_type} about '{prompt}' in {language.upper()} language:
+Topic: '{prompt}'
 """
         
         return enhanced_prompt.strip()

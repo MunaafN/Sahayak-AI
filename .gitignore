@@ -68,6 +68,12 @@ Credentials
 *.key
 *.pem
 
+# Config files with real API keys (keep templates only)
+config/*-actual.txt
+config/backend-env-actual.txt
+config/frontend-env-actual.txt
+sahayak-credentials.json
+
 # IDE and editor files
 .vscode/
 .idea/
