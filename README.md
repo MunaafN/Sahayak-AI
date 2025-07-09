@@ -1,4 +1,4 @@
-# 🚀 Sahayak AI - Hyper-Local Educational Platform
+# 🚀 Sahayak AI
 
 **Sahayak** is an AI-powered educational platform designed to democratize learning by providing hyper-local, multilingual educational content generation. Built with modern web technologies and powered by local AI services.
 
