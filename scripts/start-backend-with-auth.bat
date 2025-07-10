@@ -1,84 +1,64 @@
 @echo off
-echo ================================
-echo SAHAYAK BACKEND - GOOGLE AUTH READY
-echo ================================
+title SAHAYAK BACKEND WITH AUTHENTICATION
+echo.
+echo ============================================
+echo  🚀 SAHAYAK BACKEND WITH AUTHENTICATION
+echo ============================================
+echo.
 
-REM Change to backend directory
-cd /d "%~dp0..\sahayak-backend"
+cd sahayak-backend
 
-echo 🔍 Checking Google Cloud Authentication Setup...
-
-REM Check if Google Cloud credentials file exists
+echo 🔍 Checking Google Cloud Authentication...
 if not exist "sahayak-credentials.json" (
-    echo ❌ Google Cloud credentials file not found!
-    echo 📄 Expected: sahayak-credentials.json
-    echo 💡 Please ensure your Google Cloud service account credentials are in place
+    echo ❌ Google Cloud credentials missing!
+    echo 💡 Please ensure sahayak-credentials.json is in the backend directory
     pause
     exit /b 1
 )
 
-echo ✅ Google Cloud credentials file found
-
-REM Set Google Application Credentials environment variable
+echo ✅ Google Cloud credentials found
 set GOOGLE_APPLICATION_CREDENTIALS=%CD%\sahayak-credentials.json
-echo ✅ Google Application Credentials set: %GOOGLE_APPLICATION_CREDENTIALS%
 
-REM Check if .env file exists
+echo 🔍 Checking Environment Configuration...
 if not exist ".env" (
-    echo 📋 Creating backend environment configuration...
+    echo 📋 Creating backend .env file...
     copy "..\config\backend-env-actual.txt" ".env"
-    if exist ".env" (
-        echo ✅ Backend .env file created
-    ) else (
-        echo ⚠️ Could not create .env file automatically
-    )
-) else (
-    echo ✅ Backend .env file exists
 )
 
-REM Check frontend .env file
-echo 🔍 Checking Frontend Authentication Setup...
+echo 🔍 Checking Frontend Authentication...
 if not exist "..\sahayak-frontend\.env" (
-    echo 📋 Creating frontend environment configuration...
+    echo 📋 Creating frontend .env file...
     copy "..\config\frontend-env-actual.txt" "..\sahayak-frontend\.env"
-    if exist "..\sahayak-frontend\.env" (
-        echo ✅ Frontend .env file created
-    ) else (
-        echo ⚠️ Could not create frontend .env file automatically
-    )
-) else (
-    echo ✅ Frontend .env file exists
 )
 
-echo.
-echo 🔍 Checking Python Virtual Environment...
+echo 🐍 Activating Virtual Environment...
 if exist "venv\Scripts\activate.bat" (
-    echo ✅ Virtual environment found
-    call venv\Scripts\activate.bat
+    call venv\Scripts\activate
 ) else (
     echo ⚠️ Virtual environment not found - using system Python
 )
 
 echo.
-echo 🔍 Checking Required AI Models...
-echo 📥 Starting llava-phi3 model for vision-based worksheets...
-start /min cmd /c "ollama run llava-phi3 & exit"
-
-echo ⏳ Waiting for vision model to initialize...
-timeout /t 3 /nobreak >nul
-
+echo 🔧 Backend Features:
+echo    ✅ Educational Content Generation
+echo    ✅ Multi-language Support (10+ Indian languages)
+echo    ✅ Knowledge Base & Q&A
+echo    ✅ Lesson Planning
+echo    ✅ Worksheet Generation with Vision AI
+echo    ✅ Reading Assessment with Speech Recognition
+echo    ✅ Visual Aids Generation
+echo    ✅ Google Cloud Authentication
+echo    ✅ Firebase Authentication Integration
 echo.
+echo 🤖 AI Service: Genkit + Google Gemini
+echo 🔑 Authentication: Google Cloud + Firebase
+echo.
+
 echo 🚀 Starting Sahayak Backend Server...
 echo 📍 URL: http://localhost:8000
-echo 📚 API Docs: http://localhost:8000/docs
 echo 🔐 Google Auth: READY
-echo 🤖 AI Service: Ollama (Local)
-echo 🔍 Vision Worksheets: llava-phi3
-echo ☁️ Google Cloud: Configured
-echo ================================
+echo ============================================
 
-python main.py
+python -m uvicorn main:app --reload --port 8000
 
-echo.
-echo 🔄 Backend server stopped
 pause 

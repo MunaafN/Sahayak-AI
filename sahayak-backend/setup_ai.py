@@ -76,11 +76,11 @@ async def test_ai_services():
     """Test AI services functionality"""
     print("\n🧪 Testing AI Services...")
     
-    # Test Vertex AI Service
+    # Test Genkit AI Service
     try:
-        from services.ollama_ai_service import OllamaAIService
+        from services.genkit_ai_service import GenkitAIService
         
-        ai_service = OllamaAIService()
+        ai_service = GenkitAIService()
         
         # Test text generation
         response = await ai_service.generate_text(
@@ -207,13 +207,13 @@ def main():
     print("\n✨ Setup complete! Your Sahayak platform is ready for AI integration.")
     print("🔄 Run 'python setup_ai.py --test' to test AI services.")
 
-    print("🤖 Initializing Ollama AI service...")
-    from services.ollama_ai_service import OllamaAIService
-    ai_service = OllamaAIService()
+    print("🤖 Initializing Genkit AI service...")
+    from services.genkit_ai_service import GenkitAIService
+    ai_service = GenkitAIService()
 
-    print("✅ Ollama AI service setup complete!")
-    print("📍 No API keys needed - completely free!")
-    print("🚀 Ready to generate unlimited educational content!")
+    print("✅ Genkit AI service setup complete!")
+    print("🔑 Requires Google AI API key for best quality!")
+    print("🚀 Ready to generate superior educational content!")
 
 if __name__ == "__main__":
     main() 

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
-from services.ollama_ai_service import OllamaAIService
+from services.genkit_ai_service import GenkitAIService
 import logging
 
 router = APIRouter()
@@ -28,10 +28,10 @@ async def ask_question(request: QuestionRequest):
         logger.info(f"Processing question: {request.question[:50]}...")
         
         # Initialize Ollama AI service
-        ollama_ai = OllamaAIService()
+        ai_service = GenkitAIService()
         
-        # Generate answer using Ollama AI - let the service handle prompt creation
-        answer = await ollama_ai.generate_text(
+        # Generate answer using Google AI - let the service handle prompt creation
+        answer = await ai_service.generate_text(
             request.question,
             language=request.language,
             grade_level=request.complexity, # Assuming complexity maps to grade_level for now

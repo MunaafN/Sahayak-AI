@@ -29,14 +29,14 @@ if exist "sahayak-frontend\.env" (
     echo ✅ Frontend .env file: FOUND
     
     REM Check if it contains Firebase config
-    findstr /c:"VITE_FIREBASE_API_KEY=AIzaSy" "sahayak-frontend\.env" >nul
+    findstr /c:"VITE_FIREBASE_API_KEY=" "sahayak-frontend\.env" >nul
     if !errorlevel! equ 0 (
         echo ✅ Firebase API Key: CONFIGURED
     ) else (
         echo ⚠️ Firebase API Key: CHECK CONFIGURATION
     )
     
-    findstr /c:"VITE_FIREBASE_PROJECT_ID=sahayak-ai-platform-6118b" "sahayak-frontend\.env" >nul
+    findstr /c:"VITE_FIREBASE_PROJECT_ID=" "sahayak-frontend\.env" >nul
     if !errorlevel! equ 0 (
         echo ✅ Firebase Project ID: CONFIGURED
     ) else (

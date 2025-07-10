@@ -1,6 +1,6 @@
 # 🚀 Sahayak AI
 
-**Sahayak** is an AI-powered educational platform designed to democratize learning by providing hyper-local, multilingual educational content generation. Built with modern web technologies and powered by local AI services.
+**Sahayak** is an AI-powered educational platform designed to democratize learning by providing hyper-local, multilingual educational content generation. Built with modern web technologies and powered by Google AI and Stability AI services.
 
 ## ✨ Key Features
 
@@ -9,7 +9,7 @@
 - **📝 Lesson Planner** - Generate comprehensive lesson plans
 - **📄 Content Generator** - Create educational content in multiple languages
 - **📋 Worksheet Generator** - Generate practice worksheets and exercises
-- **🎨 Visual Aids** - Create visual learning materials
+- **🎨 Visual Aids** - Create high-quality visual learning materials with Stability AI
 - **📊 Reading Assessment** - Evaluate and improve reading skills
 
 ### 🌐 Multilingual Support
@@ -18,8 +18,8 @@
 - Culturally appropriate content generation
 
 ### 🤖 AI-Powered Technology
-- **Local AI with Ollama** (Completely Free!)
-- **Google Generative AI** (Fallback option)
+- **Google Generative AI (Gemini)** for intelligent content generation
+- **Stability AI** for high-quality image generation (1024x1024 resolution)
 - **Text-to-Speech** for accessibility
 - **Intelligent content adaptation** for different grade levels
 
@@ -33,85 +33,100 @@
 
 ### Backend
 - **FastAPI** (Python)
-- **Ollama AI Service** (Local, Free AI)
-- **Google Generative AI** (Fallback)
+- **Google Generative AI Service** (Gemini)
+- **Stability AI** for image generation
 - **Speech Services** for TTS
 
 ## 🔧 AI Service Setup
 
-### Option 1: Ollama AI (Recommended - Completely Free!)
+### Required API Keys
 
-1. **Install Ollama**
-   ```bash
-   # Windows: Download from https://ollama.ai/
-   # Or use the included installer: OllamaSetup.exe
-   
-   # Linux/Mac:
-   curl -fsSL https://ollama.ai/install.sh | sh
-   ```
-
-2. **Pull the AI Model**
-   ```bash
-   ollama pull llama3:8b
-   # Optional: For vision features
-   ollama pull llava-phi3:latest
-   ```
-
-3. **Start Ollama Service**
-   ```bash
-   ollama serve
-   ```
-
-### Option 2: Google AI (Requires API Key)
-1. Get API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+#### 1. Google AI (Required)
+1. Get API key from [Google AI Studio](https://ai.google.dev/)
 2. Add to backend `.env` file:
    ```env
-   GOOGLE_API_KEY=your_api_key_here
+   GOOGLE_AI_API_KEY=your_google_ai_api_key_here
+   ```
+
+#### 2. Stability AI (Required for Visual Aids)
+1. Get API key from [Stability AI Platform](https://platform.stability.ai/)
+2. Add to backend `.env` file:
+   ```env
+   STABILITY_API_KEY=your_stability_ai_api_key_here
    ```
 
 ## 🚀 Quick Start
 
-### Automated Setup (Windows)
+### Prerequisites
+- Python 3.8+
+- Node.js 16+
+- Google AI API Key
+- Stability AI API Key (optional, for image generation)
+
+### 1. Clone the Repository
 ```bash
-python setup_sahayak.py
+git clone https://github.com/your-username/sahayak-ai.git
+cd sahayak-ai
 ```
 
-### Manual Setup
+### 2. Backend Setup
+```bash
+cd sahayak-backend
 
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/MunaafN/sahayak-ai.git
-   cd sahayak-ai
-   ```
+# Create virtual environment
+python -m venv venv
 
-2. **Backend Setup**
-   ```bash
-   cd sahayak-backend
-   python -m venv venv
-   
-   # Windows
-   venv\Scripts\activate
-   
-   # Linux/Mac
-   source venv/bin/activate
-   
-   pip install -r requirements.txt
-   ```
+# Activate virtual environment
+# Windows:
+venv\Scripts\activate
+# Linux/Mac:
+source venv/bin/activate
 
-3. **Frontend Setup**
-   ```bash
-   cd sahayak-frontend
-   npm install
-   ```
+# Install dependencies
+pip install -r requirements.txt
 
-4. **Start the Application**
-   ```bash
-   # Backend (from sahayak-backend/)
-   python main.py
-   
-   # Frontend (from sahayak-frontend/)
-   npm run dev
-   ```
+# Create .env file with your API keys
+# Copy from config/backend-env-template.txt
+```
+
+### 3. Frontend Setup
+```bash
+cd sahayak-frontend
+npm install
+
+# Create .env file for frontend
+# Copy from config/frontend-env-template.txt
+```
+
+### 4. Start the Application
+```bash
+# Backend (from sahayak-backend/)
+python main.py
+
+# Frontend (from sahayak-frontend/ in a new terminal)
+npm run dev
+```
+
+### 5. Access the Platform
+Open `http://localhost:5173` in your browser
+
+## 🧪 Testing
+
+### Test Google AI Integration
+```bash
+cd sahayak-backend
+python test_google_ai.py
+```
+
+### Test Stability AI Integration
+```bash
+cd sahayak-backend
+python test_stability_ai.py
+```
+
+### Test via Browser
+- Backend health: `http://localhost:8000/health`
+- Stability AI test: `http://localhost:8000/visuals/test-stability`
 
 ## 🎯 Usage
 
@@ -120,6 +135,7 @@ python setup_sahayak.py
 3. **Choose Module**: Pick from available educational modules
 4. **Generate Content**: Enter your topic and get AI-generated content
 5. **Listen & Learn**: Use text-to-speech for audio learning
+6. **Create Visuals**: Generate educational images with Stability AI
 
 ## 📁 Project Structure
 
@@ -135,40 +151,53 @@ sahayak-ai/
 ├── sahayak-backend/           # FastAPI backend
 │   ├── routers/              # API route handlers
 │   ├── services/             # AI and external services
-│   │   ├── ollama_ai_service.py    # Local AI service
+│   │   ├── genkit_ai_service.py    # Google AI service
 │   │   └── speech_service.py       # TTS service
 │   ├── main.py               # Application entry point
 │   └── requirements.txt
 ├── scripts/                   # Utility scripts
+├── config/                   # Configuration templates
 ├── docs/                     # Documentation
-└── setup_sahayak.py         # Automated setup script
+└── MIGRATION_COMPLETE.md     # Migration details
 ```
+
+## 💰 Cost Information
+
+### Google AI (Gemini)
+- **Free Tier**: 15 requests/minute, 1500 requests/day
+- **Typical Cost**: $0-15/month for educational usage
+- [Pricing Details](https://ai.google.dev/pricing)
+
+### Stability AI
+- **Cost**: ~$0.040 per image (1024x1024)
+- **Recommended**: Start with $10 credit
+- [Pricing Details](https://platform.stability.ai/pricing)
 
 ## 🔒 Security & Privacy
 
-- **Local AI Processing**: Ollama runs entirely on your machine
-- **No Data Sharing**: Your content never leaves your system (with Ollama)
+- **API Key Security**: Never commit API keys to version control
+- **Environment Variables**: Use `.env` files for sensitive data
 - **Secure Authentication**: Firebase-based user management
 - **Open Source**: Full transparency and customization
 
 ## 🌟 Why Sahayak?
 
-1. **100% Free AI**: Use Ollama for unlimited, free AI generation
-2. **Culturally Relevant**: Content adapted for Indian educational context
-3. **Multilingual**: Support for 10+ Indian languages
-4. **Offline Capable**: Works without internet (with Ollama)
-5. **Privacy First**: Your data stays on your machine
+1. **High-Quality AI**: Google Gemini for superior content generation
+2. **Professional Images**: Stability AI for educational visuals
+3. **Culturally Relevant**: Content adapted for Indian educational context
+4. **Multilingual**: Support for 10+ Indian languages
+5. **Modern Architecture**: Built with latest web technologies
 
 ## 🛠️ Development
 
 ### Adding New Languages
 1. Add language to `sahayak-frontend/src/config/languages.js`
 2. Create translation files in `public/locales/[lang]/`
-3. Update AI prompts in `ollama_ai_service.py`
+3. Update AI prompts in `genkit_ai_service.py`
 
 ### Extending AI Capabilities
-1. Modify `ollama_ai_service.py` for new content types
-2. Add corresponding API routes in `routers/content.py`
+1. Modify `genkit_ai_service.py` for new content types
+2. Add corresponding API routes in `routers/`
 3. Create frontend components for new features
 
 ## 🤝 Contributing
@@ -176,7 +205,8 @@ sahayak-ai/
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Submit a pull request
+4. Test thoroughly
+5. Submit a pull request
 
 ## 📄 License
 
@@ -184,14 +214,19 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ## 🙏 Acknowledgments
 
-- **Ollama Team** for providing free, local AI capabilities
+- **Google AI Team** for providing excellent Generative AI capabilities
+- **Stability AI** for state-of-the-art image generation
 - **FastAPI** for the excellent Python web framework
 - **React Team** for the powerful frontend library
 - **Indian Education Community** for inspiration and feedback
 
 ## 📞 Support
 
-For questions or support, please open an issue on GitHub or contact the maintainers.
+For questions or support, please:
+1. Check the documentation in `docs/` folder
+2. Review setup guides in `config/` folder
+3. Open an issue on GitHub
+4. Contact the maintainers
 
 ---
 

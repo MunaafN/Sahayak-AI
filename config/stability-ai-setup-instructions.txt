@@ -1,0 +1,124 @@
+# ================================
+# STABILITY AI IMAGE GENERATION SETUP
+# ================================
+
+Sahayak AI Platform now uses Stability AI for high-quality image generation!
+Stability AI provides state-of-the-art Stable Diffusion models for exceptional visual content.
+
+## What is Stability AI?
+- Leading provider of Stable Diffusion XL models
+- Provides high-quality 1024x1024 image generation
+- Excellent for educational content creation
+- Industry-standard image generation technology
+
+## How to Get Your Stability AI API Key
+
+1. Visit Stability AI: https://platform.stability.ai/
+2. Sign up for an account
+3. Go to your account dashboard
+4. Navigate to API Keys section
+5. Generate a new API key
+6. Copy the key (starts with "sk-...")
+
+## Setting Up Your Environment
+
+### Option 1: Update your .env file
+Add this line to your sahayak-backend/.env file:
+```
+STABILITY_API_KEY=your-stability-ai-api-key-here
+```
+
+### Option 2: Set Environment Variable (Windows)
+```powershell
+$env:STABILITY_API_KEY = "your-stability-ai-api-key-here"
+```
+
+### Option 3: Set Environment Variable (Linux/Mac)
+```bash
+export STABILITY_API_KEY="your-stability-ai-api-key-here"
+```
+
+## Available Models
+
+The system uses Stable Diffusion XL 1024 v1.0:
+- **Model**: stable-diffusion-xl-1024-v1-0
+- **Resolution**: 1024x1024 pixels
+- **Style**: Optimized for educational content with digital-art preset
+- **Quality**: High-resolution, detailed images
+
+## Features
+
+- **High Quality**: 1024x1024 resolution images
+- **Educational Optimization**: Prompts optimized for learning materials
+- **Safety Filters**: Built-in content filtering for appropriate content
+- **Fast Generation**: Typically 30-60 seconds per image
+- **Style Presets**: Uses digital-art preset for educational content
+
+## Testing Your Setup
+
+After setting up your STABILITY_API_KEY:
+
+1. Start the backend: `python start_server.py`
+2. Visit: http://localhost:8000/visuals/test-stability
+3. Check for "success" status
+4. Try generating visuals in the UI
+
+## Fallback Options
+
+If Stability AI is not available, the system will:
+1. Use Unsplash educational images
+2. Generate dynamic educational placeholders
+3. Provide style-appropriate visuals
+
+## Educational Benefits
+
+Stability AI generates excellent educational content because:
+- High-resolution 1024x1024 images
+- Stable Diffusion XL provides superior quality
+- Good understanding of educational contexts
+- Consistent and reliable generation
+- Professional-quality visual materials
+
+## Troubleshooting
+
+### "Stability AI API key not configured"
+- Check your .env file has STABILITY_API_KEY set
+- Restart the backend after adding the key
+- Verify key starts with "sk-"
+
+### "Authentication failed" (401 error)
+- Verify API key is correct and active
+- Check Stability AI dashboard for key status
+- Ensure key has sufficient permissions
+
+### "Insufficient credits" (402 error)
+- Check your Stability AI account balance
+- Add credits to your account
+- Monitor usage in the dashboard
+
+### Images not saving
+- Check uploads/visuals folder exists
+- Verify file permissions
+- Check disk space availability
+
+## Cost Information
+
+- Stability AI charges per image generation
+- SDXL 1024 costs approximately $0.040 per image
+- Monitor usage in your Stability AI dashboard
+- Set up billing alerts if needed
+
+## API Rate Limits
+
+- Standard rate limits apply
+- Monitor your usage dashboard
+- Implement rate limiting in your application if needed
+- Consider caching generated images
+
+## Support
+
+- Stability AI Documentation: https://platform.stability.ai/docs
+- API Reference: https://platform.stability.ai/docs/api-reference
+- Sahayak Support: Check project documentation
+
+Happy generating! 🎨✨ 

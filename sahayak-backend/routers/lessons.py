@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict
 import logging
-from services.ollama_ai_service import OllamaAIService
+from services.genkit_ai_service import GenkitAIService
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -24,16 +24,16 @@ class LessonPlanResponse(BaseModel):
 @router.post("/generate", response_model=LessonPlanResponse)
 async def generate_lesson_plan(request: LessonRequest):
     """
-    Generate a comprehensive lesson plan using Ollama AI (completely free!)
+    Generate a comprehensive lesson plan using Google AI (enhanced quality!)
     """
     try:
         logger.info(f"Generating lesson for subject: {request.subject}")
         
-        # Initialize Ollama AI service
-        ollama_ai = OllamaAIService()
+        # Initialize Google AI service
+        ai_service = GenkitAIService()
         
-        # Generate lesson plan using Ollama AI with the specific topic and subject
-        lesson_plan = await ollama_ai.generate_text(
+        # Generate lesson plan using Google AI with the specific topic and subject
+        lesson_plan = await ai_service.generate_text(
             request.topic,  # Pass the actual topic/theme entered by user
             language=request.language,
             content_type="lesson_plan",

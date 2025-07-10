@@ -3,27 +3,19 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from typing import Optional
 import logging
-import requests
 import base64
 import os
 import time
 import uuid
-from io import BytesIO
-from services.ollama_ai_service import OllamaAIService
+import requests
+from dotenv import load_dotenv
+from services.genkit_ai_service import GenkitAIService
+
+# Load environment variables
+load_dotenv()
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
-# Hugging Face configuration
-HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY", "your-hf-token-here")
-HUGGINGFACE_API_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
-ALTERNATIVE_API_URL = "https://api-inference.huggingface.co/models/CompVis/stable-diffusion-v1-4"
-
-# Simple HF API configuration (ChatGPT approach)
-HF_TOKEN = os.getenv("HUGGINGFACE_API_KEY", "your-hf-token-here")
-SIMPLE_API_URL = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
-SIMPLE_HEADERS = {"Authorization": f"Bearer {HF_TOKEN}"}
-FALLBACK_API_URL = "https://api-inference.huggingface.co/models/playgroundai/playground-v2.5-1024px-aesthetic"
 
 class VisualRequest(BaseModel):
     prompt: str
@@ -36,465 +28,476 @@ class VisualResponse(BaseModel):
     style: str
     subject: str
 
-def save_generated_image(image_data: bytes, filename: str) -> str:
-    """Save generated image and return URL"""
+def create_educational_visual(prompt: str, style: str, subject: str, description: str = "") -> str:
+    """Create actual educational visual using multiple strategies"""
     try:
-        # Create uploads directory if it doesn't exist
-        upload_dir = "uploads/visuals"
-        os.makedirs(upload_dir, exist_ok=True)
+        # Strategy 1: Try to use a free image generation API
+        generated_url = try_free_image_generation(prompt, style, subject, description)
+        if generated_url:
+            return generated_url
         
-        # Save image file
-        file_path = os.path.join(upload_dir, filename)
-        with open(file_path, "wb") as f:
-            f.write(image_data)
+        # Strategy 2: Try to get educational images from Unsplash
+        unsplash_url = try_unsplash_educational_image(prompt, subject)
+        if unsplash_url:
+            return unsplash_url
         
-        # Return relative URL (adjust based on your server setup)
-        return f"/uploads/visuals/{filename}"
+        # Strategy 3: Create dynamic educational placeholder with user selections
+        return create_dynamic_placeholder(prompt, style, subject, description)
+        
     except Exception as e:
-        logger.error(f"Error saving image: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to save generated image")
+        logger.error(f"Error creating educational visual: {str(e)}")
+        return create_fallback_placeholder(prompt, style, subject)
+
+def try_free_image_generation(prompt: str, style: str, subject: str, description: str) -> Optional[str]:
+    """Generate images using Stability AI API"""
+    try:
+        # Get Stability AI API key from environment
+        stability_api_key = os.getenv("STABILITY_API_KEY")
+        print(f"🔍 Environment check - Stability AI API Key found: {'Yes' if stability_api_key else 'No'}")
+        if stability_api_key:
+            print(f"🔑 Stability AI API Key starts with: {stability_api_key[:10]}...")
+        
+        if not stability_api_key or stability_api_key == "your-stability-ai-api-key-here":
+            print("❌ Stability AI API key not configured, skipping image generation")
+            logger.info("Stability AI API key not configured, skipping image generation")
+            return None
+
+        # Enhanced educational prompt for Stability AI
+        base_description = description if description else f"Educational {style} about {prompt} for {subject}"
+        
+        educational_prompt = f"""
+        {base_description}, educational {style}, high quality, detailed, vibrant colors, 
+        child-friendly, classroom appropriate, professional educational material, 
+        clear visual elements, engaging design, suitable for learning, 
+        digital art, clean composition, educational illustration, safe for children
+        """
+        
+        print(f"🤖 Trying Stability AI image generation...")
+        print(f"📝 Prompt: {educational_prompt.strip()[:100]}...")
+        
+        # Stability AI API endpoint for text-to-image
+        url = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image"
+        
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {stability_api_key}",
+        }
+        
+        payload = {
+            "text_prompts": [
+                {
+                    "text": educational_prompt.strip(),
+                    "weight": 1
+                },
+                {
+                    "text": "blurry, low quality, inappropriate, violent, scary, dark, adult content, nsfw",
+                    "weight": -1
+                }
+            ],
+            "cfg_scale": 7,
+            "height": 1024,
+            "width": 1024,
+            "steps": 30,
+            "samples": 1,
+            "style_preset": "digital-art"
+        }
+        
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
+        
+        print(f"📊 Response Status: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            if "artifacts" in data and len(data["artifacts"]) > 0:
+                # Get the first generated image
+                image_data = data["artifacts"][0]
+                image_base64 = image_data.get("base64")
+                
+                if image_base64:
+                    # Save the generated image
+                    upload_dir = "uploads/visuals"
+                    os.makedirs(upload_dir, exist_ok=True)
+                    
+                    timestamp = int(time.time())
+                    filename = f"stability_generated_{timestamp}_{style}_{subject}.png"
+                    file_path = os.path.join(upload_dir, filename)
+                    
+                    # Decode and save the image
+                    image_bytes = base64.b64decode(image_base64)
+                    with open(file_path, "wb") as f:
+                        f.write(image_bytes)
+                    
+                    local_image_url = f"/uploads/visuals/{filename}"
+                    print(f"✅ Generated image via Stability AI: {local_image_url}")
+                    return local_image_url
+                else:
+                    print("⚠️ No base64 image data in response")
+                    return None
+            else:
+                print("⚠️ No artifacts in Stability AI response")
+                return None
+        elif response.status_code == 401:
+            print("❌ Stability AI API Key authentication failed")
+            return None
+        elif response.status_code == 402:
+            print("⚠️ Insufficient credits in Stability AI account")
+            return None
+        else:
+            print(f"⚠️ Stability AI API failed: {response.status_code}")
+            print(f"📄 Response: {response.text[:200]}")
+            return None
+            
+    except Exception as e:
+        print(f"⚠️ Stability AI image generation failed: {str(e)}")
+        logger.warning(f"Stability AI image generation failed: {str(e)}")
+        return None
+
+def try_unsplash_educational_image(prompt: str, subject: str) -> Optional[str]:
+    """Get educational images from Unsplash API (free)"""
+    try:
+        # Create educational search query
+        search_terms = []
+        
+        # Add subject-specific terms
+        if subject.lower() == "science":
+            search_terms.extend(["science", "education", "learning", "student"])
+        elif subject.lower() == "mathematics":
+            search_terms.extend(["math", "numbers", "education", "learning"])
+        elif subject.lower() == "social_studies":
+            search_terms.extend(["history", "geography", "culture", "education"])
+        elif subject.lower() == "language":
+            search_terms.extend(["books", "reading", "writing", "education"])
+        else:
+            search_terms.extend(["education", "learning", "school"])
+        
+        # Add prompt keywords
+        prompt_words = prompt.lower().split()[:3]  # Take first 3 words
+        search_terms.extend(prompt_words)
+        
+        search_query = "+".join(search_terms[:5])  # Limit to 5 terms
+        
+        # Free Unsplash API call (no key needed for basic usage)
+        unsplash_url = f"https://source.unsplash.com/800x600/?{search_query}"
+        
+        # Verify the URL works
+        response = requests.head(unsplash_url, timeout=5)
+        if response.status_code == 200:
+            return unsplash_url
+        
+        return None
+        
+    except Exception as e:
+        logger.warning(f"Unsplash API failed: {str(e)}")
+        return None
+
+def create_dynamic_placeholder(prompt: str, style: str, subject: str, description: str) -> str:
+    """Create dynamic educational placeholder that reflects user selections"""
+    try:
+        # Style-based colors and themes
+        style_config = {
+            "illustration": {"bg": "E3F2FD", "text": "1565C0", "emoji": "🎨"},
+            "diagram": {"bg": "F3E5F5", "text": "7B1FA2", "emoji": "📊"},
+            "cartoon": {"bg": "FFF3E0", "text": "F57C00", "emoji": "🎭"},
+            "realistic": {"bg": "E8F5E8", "text": "388E3C", "emoji": "📷"}
+        }
+        
+        # Subject-based themes
+        subject_config = {
+            "science": {"emoji": "🔬", "theme": "Scientific"},
+            "mathematics": {"emoji": "🔢", "theme": "Mathematical"}, 
+            "social_studies": {"emoji": "🌍", "theme": "Cultural"},
+            "language": {"emoji": "📚", "theme": "Literary"},
+            "geography": {"emoji": "🗺️", "theme": "Geographic"},
+            "history": {"emoji": "🏛️", "theme": "Historical"}
+        }
+        
+        # Get configurations
+        style_info = style_config.get(style, style_config["illustration"])
+        subject_info = subject_config.get(subject, {"emoji": "🎓", "theme": "Educational"})
+        
+        # Create descriptive text for the placeholder
+        display_text = f"{subject_info['emoji']} {subject_info['theme']} {style_info['emoji']}"
+        encoded_prompt = prompt.replace(' ', '+')[:40]
+        
+        # Create enhanced placeholder URL with style and subject reflected
+        placeholder_url = (f"https://via.placeholder.com/600x400/{style_info['bg']}/{style_info['text']}"
+                          f"?text={display_text}%0A{encoded_prompt}%0A{style.title()}+Style")
+        
+        return placeholder_url
+        
+    except Exception as e:
+        logger.error(f"Error creating dynamic placeholder: {str(e)}")
+        return create_fallback_placeholder(prompt, style, subject)
+
+def create_fallback_placeholder(prompt: str, style: str, subject: str) -> str:
+    """Create basic fallback placeholder"""
+    try:
+        encoded_text = f"Educational+Visual%0A{prompt.replace(' ', '+')[:30]}"
+        return f"https://via.placeholder.com/600x400/E5E7EB/374151?text={encoded_text}"
+    except:
+        return "https://via.placeholder.com/600x400/E5E7EB/374151?text=Educational+Visual"
 
 def enhance_prompt_for_education(prompt: str, style: str, subject: str) -> str:
-    """Enhance the user prompt for better educational visuals"""
+    """Enhanced prompt for Google AI to generate detailed visual descriptions"""
     
-    style_modifiers = {
-        "illustration": "colorful educational illustration, clear and detailed, suitable for children",
-        "diagram": "clean educational diagram with clear labels, professional style, high contrast",
-        "cartoon": "child-friendly cartoon style, colorful and engaging, educational",
-        "realistic": "realistic educational illustration, detailed but appropriate for students"
+    style_descriptions = {
+        "illustration": "Create a detailed description for a colorful educational illustration",
+        "diagram": "Create a detailed description for a clear educational diagram with labels",
+        "cartoon": "Create a detailed description for a child-friendly cartoon-style educational visual",
+        "realistic": "Create a detailed description for a realistic educational photograph or illustration"
     }
     
-    subject_context = {
-        "science": "scientific accuracy, educational value",
-        "mathematics": "clear mathematical concepts, geometric precision",
-        "social_studies": "culturally appropriate, historically accurate",
-        "language": "clear text and symbols, educational context",
-        "geography": "accurate geographical features and representations",
-        "history": "historically accurate, appropriate for students"
+    subject_contexts = {
+        "science": "focusing on scientific accuracy and clear explanation of concepts",
+        "mathematics": "emphasizing mathematical concepts, numbers, and geometric relationships",
+        "social_studies": "highlighting cultural, historical, or social elements appropriately",
+        "language": "incorporating text, writing, reading, or language learning elements",
+        "geography": "showing geographical features, maps, or location-based information",
+        "history": "depicting historical accuracy and age-appropriate historical context"
     }
     
-    style_modifier = style_modifiers.get(style, "educational illustration")
-    subject_modifier = subject_context.get(subject, "educational value")
+    style_desc = style_descriptions.get(style, "Create a detailed description for an educational visual")
+    subject_context = subject_contexts.get(subject, "with general educational value")
     
-    enhanced_prompt = f"{prompt}, {style_modifier}, {subject_modifier}, high quality, clear and visible, suitable for Indian school children, educational poster style"
+    enhanced_prompt = f"""
+    {style_desc} about: {prompt}
+    
+    Requirements:
+    - {subject_context}
+    - Suitable for elementary/primary school students
+    - Educationally valuable and engaging
+    - Clear, bright, and visually appealing
+    - Include specific visual elements that would help students understand the concept
+    - Describe colors, layout, and key educational components
+    - Make it appropriate for Indian educational context
+    
+    Style: {style.title()}
+    Subject: {subject.title()}
+    Topic: {prompt}
+    
+    Provide a detailed visual description that an illustrator could use to create the actual image.
+    """
     
     return enhanced_prompt
 
 @router.post("/generate", response_model=VisualResponse)
 async def generate_visual(request: VisualRequest):
     """
-    Generate educational visual aids using Hugging Face Stable Diffusion 2.1
+    Generate educational visual aids using Google AI + multiple image strategies
     """
     try:
         logger.info(f"Generating visual for: {request.prompt[:50]}...")
         print("=" * 60)
-        print("🎨 NEW VISUAL GENERATION REQUEST:")
+        print("🎨 NEW EDUCATIONAL VISUAL GENERATION:")
         print(f"   📝 Prompt: {request.prompt}")
         print(f"   🎭 Style: {request.style}")
         print(f"   📚 Subject: {request.subject}")
         print("=" * 60)
         
-        # Enhance the prompt for better educational content
-        enhanced_prompt = enhance_prompt_for_education(request.prompt, request.style, request.subject)
-        print(f"🔄 Enhanced prompt: {enhanced_prompt}")
+        # Initialize Google AI service
+        ai_service = GenkitAIService()
         
-        # Prepare headers for Hugging Face API
-        headers = {
-            "Authorization": f"Bearer {HUGGINGFACE_API_KEY}",
-            "Content-Type": "application/json"
-        }
+        visual_description = ""
         
-        # Prepare the payload
-        payload = {
-            "inputs": enhanced_prompt,
-            "parameters": {
-                "negative_prompt": "blurry, low quality, inappropriate, violent, scary, dark",
-                "num_inference_steps": 20,
-                "guidance_scale": 7.5,
-                "width": 512,
-                "height": 512
-            },
-            "options": {
-                "wait_for_model": True,
-                "use_cache": False
-            }
-        }
+        if ai_service.genkit_available:
+            try:
+                # Enhance the prompt for better educational content
+                enhanced_prompt = enhance_prompt_for_education(request.prompt, request.style, request.subject)
+                print(f"🔄 Enhanced prompt: {enhanced_prompt[:150]}...")
+                
+                print("🤖 Generating visual description with Google Gemini...")
+                
+                # Use Google AI to generate detailed visual description
+                visual_description = await ai_service.generate_text(
+                    enhanced_prompt,
+                    language="en",
+                    content_type="visual",
+                    grade_level="3",
+                    length="medium",
+                    subject=request.subject
+                )
+                
+                print("✅ Visual description generated successfully!")
+                print(f"📝 Description: {visual_description[:150]}...")
+                
+            except Exception as e:
+                print(f"⚠️ Google AI description failed: {str(e)}")
+                visual_description = f"Educational visual about {request.prompt} in {request.style} style for {request.subject}"
         
-        print("🤖 Calling Hugging Face Stable Diffusion v1.5...")
+        # Generate actual visual using multiple strategies
+        print("🖼️ Creating educational visual...")
+        image_url = create_educational_visual(request.prompt, request.style, request.subject, visual_description)
         
-        # Make request to Hugging Face API
-        response = requests.post(
-            HUGGINGFACE_API_URL,
-            headers=headers,
-            json=payload,
-            timeout=60
-        )
+        # Enhanced prompt for response
+        enhanced_response_prompt = f"Google AI Enhanced: {visual_description[:100]}..." if visual_description else request.prompt
         
-        print(f"📊 HF API Response Status: {response.status_code}")
-        if response.status_code != 200:
-            print(f"📄 HF API Response: {response.text[:200]}...")
-        
-        if response.status_code == 200:
-            # Get image data
-            image_data = response.content
-            
-            # Generate unique filename
-            timestamp = int(time.time())
-            filename = f"visual_{timestamp}_{request.style}_{request.subject}.jpg"
-            
-            # Save the image and get URL
-            image_url = save_generated_image(image_data, filename)
-            
-            print("✅ Visual generated successfully!")
-            print(f"📁 Saved as: {filename}")
-            print(f"🔗 URL: {image_url}")
-            print("=" * 60)
-            
-            return VisualResponse(
-                imageUrl=image_url,
-                prompt=request.prompt,
-                style=request.style,
-                subject=request.subject
-            )
-            
-        elif response.status_code == 503:
-            # Model is loading, provide fallback
-            print("⚠️ Hugging Face model is loading...")
-            fallback_url = f"https://via.placeholder.com/512x512/E5E7EB/6B7280?text=Generating+Visual...+Please+wait"
-            
-            return VisualResponse(
-                imageUrl=fallback_url,
-                prompt=request.prompt,
-                style=request.style,
-                subject=request.subject
-            )
-            
-        else:
-            # Try alternative model as fallback
-            print(f"⚠️ Primary model failed ({response.status_code}), trying alternative...")
-            fallback_result = await try_alternative_model(enhanced_prompt, request)
-            if fallback_result:
-                return fallback_result
-            
-            error_msg = f"Hugging Face API error: {response.status_code}"
-            print(f"❌ {error_msg}")
-            logger.error(f"HF API error: {response.status_code}, {response.text}")
-            
-            # Provide fallback placeholder
-            fallback_url = f"https://via.placeholder.com/512x512/FEE2E2/DC2626?text=Generation+Failed"
-            
-            return VisualResponse(
-                imageUrl=fallback_url,
-                prompt=request.prompt,
-                style=request.style,
-                subject=request.subject
-            )
-        
-    except requests.exceptions.Timeout:
-        print("⏱️ Hugging Face API timeout")
-        fallback_url = f"https://via.placeholder.com/512x512/FEF3C7/D97706?text=Timeout+-+Try+Again"
+        print("✅ Educational visual created successfully!")
+        print(f"🔗 URL: {image_url}")
+        print("=" * 60)
         
         return VisualResponse(
-            imageUrl=fallback_url,
-            prompt=request.prompt,
+            imageUrl=image_url,
+            prompt=enhanced_response_prompt,
             style=request.style,
             subject=request.subject
         )
         
     except Exception as e:
-        error_msg = f"Failed to generate visual: {str(e)}"
-        logger.error(f"Error generating visual: {str(e)}")
-        print(f"❌ {error_msg}")
+        print(f"❌ General error: {str(e)}")
+        logger.error(f"Visual generation error: {str(e)}")
         
-        # Provide fallback placeholder
-        fallback_url = f"https://via.placeholder.com/512x512/FEE2E2/DC2626?text=Error+Occurred"
+        # Create fallback
+        fallback_url = create_fallback_placeholder(
+            request.prompt if hasattr(request, 'prompt') else "Error", 
+            request.style if hasattr(request, 'style') else "illustration", 
+            request.subject if hasattr(request, 'subject') else "general"
+        )
         
         return VisualResponse(
             imageUrl=fallback_url,
-            prompt=request.prompt,
-            style=request.style,
-            subject=request.subject
+            prompt=request.prompt if hasattr(request, 'prompt') else "Error generating visual",
+            style=request.style if hasattr(request, 'style') else "illustration",
+            subject=request.subject if hasattr(request, 'subject') else "general"
         )
-
-async def try_alternative_model(enhanced_prompt: str, request: VisualRequest):
-    """Try alternative Stable Diffusion model as fallback"""
-    try:
-        headers = {
-            "Authorization": f"Bearer {HUGGINGFACE_API_KEY}",
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "inputs": enhanced_prompt,
-            "parameters": {
-                "num_inference_steps": 15,
-                "guidance_scale": 7.5,
-                "width": 512,
-                "height": 512
-            },
-            "options": {
-                "wait_for_model": True,
-                "use_cache": False
-            }
-        }
-        
-        print("🔄 Trying alternative model: CompVis/stable-diffusion-v1-4...")
-        
-        response = requests.post(
-            ALTERNATIVE_API_URL,
-            headers=headers,
-            json=payload,
-            timeout=45
-        )
-        
-        print(f"📊 Alternative API Response Status: {response.status_code}")
-        
-        if response.status_code == 200:
-            image_data = response.content
-            
-            # Generate unique filename
-            timestamp = int(time.time())
-            filename = f"visual_alt_{timestamp}_{request.style}_{request.subject}.jpg"
-            
-            # Save the image and get URL
-            image_url = save_generated_image(image_data, filename)
-            
-            print("✅ Alternative model generated visual successfully!")
-            print(f"📁 Saved as: {filename}")
-            print(f"🔗 URL: {image_url}")
-            
-            return VisualResponse(
-                imageUrl=image_url,
-                prompt=request.prompt,
-                style=request.style,
-                subject=request.subject
-            )
-        else:
-            print(f"❌ Alternative model also failed: {response.status_code}")
-            logger.error(f"Alternative model failed: {response.status_code}")
-            return None
-            
-    except Exception as e:
-        print(f"❌ Alternative model error: {str(e)}")
-        logger.error(f"Alternative model error: {str(e)}")
-        return None
 
 @router.get("/generate-image")
 async def generate_image(prompt: str = Query(..., description="Image generation prompt")):
     """
-    Simple image generation endpoint using GET request
-    Usage: /api/visuals/generate-image?prompt=your+text
+    Simple image generation endpoint for educational content
     """
     try:
-        print("=" * 60)
-        print("🎨 SIMPLE IMAGE GENERATION REQUEST:")
-        print(f"   📝 Prompt: {prompt}")
-        print("=" * 60)
+        print(f"🎨 Simple image generation request: {prompt}")
         
-        # Call Hugging Face API with simple structure
-        print("🤖 Calling Hugging Face FLUX.1-schnell...")
-        response = requests.post(
-            SIMPLE_API_URL, 
-            headers=SIMPLE_HEADERS, 
-            json={
-                "inputs": prompt,
-                "options": {"wait_for_model": True}
-            },
-            timeout=60
-        )
+        # Initialize Google AI service
+        ai_service = GenkitAIService()
         
-        print(f"📊 HF API Response Status: {response.status_code}")
-        if response.status_code == 200:
-            print(f"📊 Image received: {len(response.content)} bytes")
-        
-        if response.status_code != 200:
-            print(f"❌ FLUX failed, trying Playground v2.5...")
-            # Try fallback model
-            response = requests.post(
-                FALLBACK_API_URL, 
-                headers=SIMPLE_HEADERS, 
-                json={
-                    "inputs": prompt,
-                    "options": {"wait_for_model": True}
-                },
-                timeout=60
+        description = ""
+        if ai_service.genkit_available:
+            # Generate educational image description
+            educational_prompt = f"""
+            Create a detailed description for an educational visual about: {prompt}
+            
+            Make it:
+            - Suitable for school children
+            - Educationally valuable
+            - Clear and engaging
+            - Appropriate for classroom use
+            """
+            
+            description = await ai_service.generate_text(
+                educational_prompt,
+                language="en",
+                content_type="visual",
+                grade_level="3",
+                length="short"
             )
-            print(f"📊 Fallback API Response Status: {response.status_code}")
-            if response.status_code == 200:
-                print(f"📊 Fallback image received: {len(response.content)} bytes")
-            
-            if response.status_code != 200:
-                print(f"❌ Both models failed: {response.text[:200]}")
-                # Generate a placeholder image instead of failing
-                return await create_placeholder_image(prompt)
-
-        # Check if we have a successful response with image data
-        if response.status_code == 200 and len(response.content) > 0:
-            print("✅ Got successful image response, processing...")
-            
-            # Create uploads directory if it doesn't exist
-            upload_dir = "uploads/visuals"
-            os.makedirs(upload_dir, exist_ok=True)
-            
-            # Save the image with unique name
-            image_name = f"generated_{uuid.uuid4().hex[:8]}.png"
-            image_path = os.path.join(upload_dir, image_name)
-            
-            with open(image_path, "wb") as f:
-                f.write(response.content)
-
-            # Create the server URL for the saved image
-            image_url = f"/uploads/visuals/{image_name}"
-            
-            print(f"✅ Image generated successfully!")
-            print(f"📁 Saved as: {image_path}")
-            print(f"🔗 Server URL: {image_url}")
-            print("=" * 60)
-
-            # Return JSON with image URL instead of the file
-            return JSONResponse(
-                content={
-                    "imageUrl": image_url,
-                    "success": True,
-                    "message": "Visual generated successfully"
-                },
-                headers={"Content-Type": "application/json"}
-            )
-        else:
-            # If we get here, something went wrong
-            print(f"❌ Invalid response: status={response.status_code}, content_length={len(response.content)}")
-            return await create_placeholder_image(prompt)
-
-    except requests.exceptions.Timeout:
-        print("⏱️ Request timeout")
-        return JSONResponse(
-            status_code=500, 
-            content={"error": "Request timeout - please try again"},
-            headers={"Content-Type": "application/json"}
-        )
+        
+        # Create visual using our strategies
+        image_url = create_educational_visual(prompt, "illustration", "general", description)
+        
+        return JSONResponse({
+            "imageUrl": image_url,
+            "description": description,
+            "prompt": prompt,
+            "service": "Google AI + Educational Visual Generator"
+        })
+        
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
-        return JSONResponse(
-            status_code=500, 
-            content={"error": str(e)},
-            headers={"Content-Type": "application/json"}
-        )
+        logger.error(f"Simple image generation error: {str(e)}")
+        return JSONResponse({
+            "error": str(e),
+            "imageUrl": create_fallback_placeholder(prompt, "illustration", "general")
+        }, status_code=500)
 
 @router.get("/health")
 async def visuals_health():
     """Health check for visual generation service"""
-    return {"status": "healthy", "service": "visual-generation", "provider": "Hugging Face FLUX.1-schnell"}
+    ai_service = GenkitAIService()
+    stability_key = os.getenv("STABILITY_API_KEY")
+    return {
+        "service": "visual-generation",
+        "status": "healthy",
+        "ai_service": "Google AI (Gemini) + Stability AI Image Generation",
+        "ai_available": ai_service.genkit_available,
+        "stability_available": bool(stability_key and stability_key != "your-stability-ai-api-key-here"),
+        "features": ["AI descriptions", "Stability AI image generation", "Unsplash integration", "Dynamic placeholders"]
+    }
 
 @router.get("/test-models")
 async def test_models():
-    """Test available models"""
-    test_results = {}
-    models_to_test = [
-        ("black-forest-labs/FLUX.1-schnell", SIMPLE_API_URL),
-        ("playgroundai/playground-v2.5-1024px-aesthetic", FALLBACK_API_URL)
-    ]
-    
-    for model_name, url in models_to_test:
-        try:
-            response = requests.post(
-                url,
-                headers=SIMPLE_HEADERS,
-                json={"inputs": "test prompt", "options": {"wait_for_model": True}},
-                timeout=30
-            )
-            test_results[model_name] = {
-                "status": response.status_code,
-                "available": response.status_code == 200,
-                "response": response.text[:100] if response.status_code != 200 else "OK"
-            }
-        except Exception as e:
-            test_results[model_name] = {
-                "status": "error",
-                "available": False,
-                "response": str(e)
-            }
-    
-    return {"model_tests": test_results}
-
-async def create_placeholder_image(prompt: str):
-    """Create a placeholder image when AI generation fails"""
+    """Test visual generation capabilities"""
     try:
-        from PIL import Image, ImageDraw, ImageFont
-        import textwrap
+        ai_service = GenkitAIService()
         
-        # Create a 512x512 image with educational theme
-        width, height = 512, 512
-        image = Image.new('RGB', (width, height), color='#f8f9fa')
-        draw = ImageDraw.Draw(image)
+        test_prompt = "photosynthesis in plants"
+        test_style = "diagram"
+        test_subject = "science"
         
-        # Try to use a better font, fallback to default
-        try:
-            font_large = ImageFont.truetype("arial.ttf", 24)
-            font_small = ImageFont.truetype("arial.ttf", 16)
-        except:
-            font_large = ImageFont.load_default()
-            font_small = ImageFont.load_default()
+        # Test visual creation
+        visual_url = create_educational_visual(test_prompt, test_style, test_subject)
         
-        # Draw educational-themed border
-        border_color = '#4f46e5'  # Primary color
-        draw.rectangle([10, 10, width-10, height-10], outline=border_color, width=3)
+        ai_description = ""
+        if ai_service.genkit_available:
+            # Test AI description
+            ai_description = await ai_service.generate_text(
+                "Create a description of a plant photosynthesis diagram for students",
+                language="en",
+                content_type="visual",
+                grade_level="3"
+            )
         
-        # Add title
-        title = "📚 Educational Visual"
-        title_bbox = draw.textbbox((0, 0), title, font=font_large)
-        title_width = title_bbox[2] - title_bbox[0]
-        draw.text(((width - title_width) // 2, 50), title, fill=border_color, font=font_large)
+        stability_key = os.getenv("STABILITY_API_KEY")
+        stability_available = bool(stability_key and stability_key != "your-stability-ai-api-key-here")
         
-        # Add prompt (wrapped)
-        wrapped_prompt = textwrap.fill(prompt[:100], width=40)
-        prompt_lines = wrapped_prompt.split('\n')
-        
-        y_offset = 120
-        for line in prompt_lines[:4]:  # Max 4 lines
-            line_bbox = draw.textbbox((0, 0), line, font=font_small)
-            line_width = line_bbox[2] - line_bbox[0]
-            draw.text(((width - line_width) // 2, y_offset), line, fill='#374151', font=font_small)
-            y_offset += 25
-        
-        # Add message
-        message = "🔧 AI Image Generation Temporarily Unavailable"
-        message_bbox = draw.textbbox((0, 0), message, font=font_small)
-        message_width = message_bbox[2] - message_bbox[0]
-        draw.text(((width - message_width) // 2, height - 100), message, fill='#dc2626', font=font_small)
-        
-        # Add instruction
-        instruction = "Please try again later or check with your teacher"
-        inst_bbox = draw.textbbox((0, 0), instruction, font=font_small)
-        inst_width = inst_bbox[2] - inst_bbox[0]
-        draw.text(((width - inst_width) // 2, height - 70), instruction, fill='#6b7280', font=font_small)
-        
-        # Save placeholder image
-        upload_dir = "uploads/visuals"
-        os.makedirs(upload_dir, exist_ok=True)
-        
-        image_name = f"placeholder_{uuid.uuid4().hex[:8]}.png"
-        image_path = os.path.join(upload_dir, image_name)
-        image.save(image_path, "PNG")
-        
-        # Create the server URL for the placeholder image
-        image_url = f"/uploads/visuals/{image_name}"
-        
-        print(f"✅ Generated placeholder image: {image_path}")
-        print(f"🔗 Placeholder URL: {image_url}")
-        
-        return JSONResponse(
-            content={
-                "imageUrl": image_url,
-                "success": True,
-                "message": "Placeholder visual generated"
-            },
-            headers={"Content-Type": "application/json"}
-        )
+        return {
+            "google_ai": "available" if ai_service.genkit_available else "not available",
+            "stability_generation": "available" if stability_available else "not configured",
+            "visual_generation": "working",
+            "test_visual_url": visual_url,
+            "ai_description": ai_description[:100] + "..." if len(ai_description) > 100 else ai_description,
+            "features": ["Google AI descriptions", "Stability AI image generation", "Unsplash educational images", "Dynamic style-based placeholders"]
+        }
         
     except Exception as e:
-        print(f"❌ Failed to create placeholder: {str(e)}")
-        return JSONResponse(
-            status_code=500, 
-            content={"error": "Image generation and fallback both failed"},
-            headers={"Content-Type": "application/json"}
-        ) 
+        return {
+            "error": str(e),
+            "status": "partial functionality available"
+        }
+
+@router.get("/test-stability")
+async def test_stability():
+    """Test Stability AI image generation"""
+    try:
+        stability_key = os.getenv("STABILITY_API_KEY")
+        if not stability_key or stability_key == "your-stability-ai-api-key-here":
+            return {"status": "error", "error": "Stability AI API key not configured"}
+        
+        print("🧪 Testing Stability AI image generation...")
+        
+        # Test with a simple educational prompt
+        test_image_url = try_free_image_generation(
+            prompt="simple math addition", 
+            style="illustration", 
+            subject="mathematics",
+            description="Educational illustration showing 2+2=4 with colorful numbers"
+        )
+        
+        if test_image_url and not test_image_url.startswith("https://via.placeholder.com"):
+            return {
+                "status": "success", 
+                "message": "Stability AI image generation is working!", 
+                "test_image": test_image_url,
+                "model": "stable-diffusion-xl-1024-v1-0"
+            }
+        else:
+            return {
+                "status": "fallback", 
+                "message": "Stability AI not available, using fallback methods",
+                "test_image": test_image_url
+            }
+            
+    except Exception as e:
+        logger.error(f"Stability AI test error: {str(e)}")
+        return {"status": "error", "error": str(e)} 

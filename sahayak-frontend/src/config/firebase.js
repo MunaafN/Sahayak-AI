@@ -5,12 +5,12 @@ import { getStorage } from 'firebase/storage';
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDWe4EEjnvBFZgxLTizG4xwsyV3PPFNjB4",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "sahayak-ai-platform-6118b.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "sahayak-ai-platform-6118b",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "sahayak-ai-platform-6118b.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "697689176014",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:697689176014:web:64b7ee45ed20fccabddd9f"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "your-firebase-api-key",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "your-project.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "your-project-id",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "your-project.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "your-sender-id",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "your-app-id"
 };
 
 // Initialize Firebase

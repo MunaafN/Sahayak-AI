@@ -5,13 +5,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Optional
 import os
-import subprocess
 import time
-import requests
 from dotenv import load_dotenv
 import logging
-import threading
-import signal
 
 # Import route modules
 from routers import content, worksheets, knowledge, visuals, assessment, lessons, dashboard
@@ -19,149 +15,81 @@ from routers import content, worksheets, knowledge, visuals, assessment, lessons
 # Load environment variables
 load_dotenv()
 
-def check_ollama_running():
-    """Check if Ollama service is running"""
+def check_google_ai_setup():
+    """Check if Google AI is properly configured"""
     try:
-        response = requests.get("http://localhost:11434/api/tags", timeout=3)
-        return response.status_code == 200
-    except:
-        return False
-
-def start_ollama_service():
-    """Start Ollama service in background"""
-    try:
-        print("🚀 Starting Ollama service...")
-        subprocess.Popen(["ollama", "serve"], 
-                        stdout=subprocess.DEVNULL, 
-                        stderr=subprocess.DEVNULL,
-                        creationflags=subprocess.CREATE_NEW_CONSOLE if os.name == 'nt' else 0)
+        api_key = os.getenv("GOOGLE_AI_API_KEY")
+        if not api_key:
+            print("❌ GOOGLE_AI_API_KEY not found in environment variables")
+            return False
         
-        # Wait for service to start
-        for i in range(10):  # Wait up to 10 seconds
-            if check_ollama_running():
-                print("✅ Ollama service started successfully")
-                return True
-            time.sleep(1)
-        
-        print("⚠️ Ollama service took too long to start")
-        return False
-    except FileNotFoundError:
-        print("❌ Ollama not found. Install from https://ollama.ai/")
-        return False
-    except Exception as e:
-        print(f"❌ Error starting Ollama: {e}")
-        return False
-
-def check_and_start_model(model_name):
-    """Check if model exists and start it"""
-    try:
-        print(f"📋 Checking for model: {model_name}")
-        
-        # List available models
-        list_result = subprocess.run(["ollama", "list"], 
-                                   capture_output=True, text=True, timeout=10)
-        
-        if model_name in list_result.stdout:
-            print(f"✅ Model {model_name} is available")
-            
-            # Start the model in background
-            print(f"🔄 Starting model: {model_name}")
-            def run_model():
-                try:
-                    subprocess.run(["ollama", "run", model_name], 
-                                 input="Ready for educational tasks!\n", 
-                                 text=True, timeout=30,
-                                 stdout=subprocess.DEVNULL)
-                except:
-                    pass  # Model startup can timeout, that's normal
-            
-            # Run model in separate thread
-            thread = threading.Thread(target=run_model, daemon=True)
-            thread.start()
-            
-            time.sleep(2)  # Give model time to initialize
-            print(f"✅ Model {model_name} started successfully")
+        if api_key.startswith("AIza") and len(api_key) == 39:
+            print("✅ Google AI API key format is valid")
             return True
         else:
-            print(f"📥 Model {model_name} not found, attempting to download...")
-            try:
-                pull_result = subprocess.run(["ollama", "pull", model_name], 
-                                           capture_output=True, text=True, timeout=300)
-                if pull_result.returncode == 0:
-                    print(f"✅ Model {model_name} downloaded successfully")
-                    
-                    # Start the newly downloaded model
-                    def run_model():
-                        try:
-                            subprocess.run(["ollama", "run", model_name], 
-                                         input="Ready for educational tasks!\n", 
-                                         text=True, timeout=30,
-                                         stdout=subprocess.DEVNULL)
-                        except:
-                            pass
-                    
-                    thread = threading.Thread(target=run_model, daemon=True)
-                    thread.start()
-                    time.sleep(2)
-                    
-                    print(f"✅ Model {model_name} downloaded and started")
-                    return True
-                else:
-                    print(f"❌ Failed to download {model_name}")
-                    return False
-            except subprocess.TimeoutExpired:
-                print(f"⏱️ Download of {model_name} timed out")
-                return False
-            except Exception as e:
-                print(f"❌ Error downloading {model_name}: {e}")
-                return False
-                
+            print("⚠️ Google AI API key format seems incorrect")
+            return False
+            
     except Exception as e:
-        print(f"❌ Error checking model {model_name}: {e}")
+        print(f"❌ Error checking Google AI setup: {e}")
         return False
 
-def start_ollama():
-    """Complete Ollama startup with required models"""
-    print("=" * 60)
-    print("🤖 STARTING OLLAMA AI SERVICE")
-    print("=" * 60)
-    
-    # Step 1: Check if Ollama is already running
-    if check_ollama_running():
-        print("✅ Ollama service is already running")
-    else:
-        print("🔄 Ollama service not running, starting it...")
-        if not start_ollama_service():
-            print("❌ Failed to start Ollama service")
-            print("💡 Install Ollama from https://ollama.ai/ and try again")
-            return False
-    
-    # Step 2: Start required models (using memory-efficient variants)
-    # Use lighter models for systems with limited RAM
-    models_to_start = ["llama3:8b", "llava-phi3:latest"]
-    
-    for model in models_to_start:
-        print(f"\n🔄 Setting up {model}...")
-        success = check_and_start_model(model)
-        if success:
-            print(f"✅ {model} is ready for educational tasks")
+def test_google_ai_connection():
+    """Test Google AI service connection"""
+    try:
+        print("🔄 Testing Google AI connection...")
+        
+        # Import and test the service
+        from services.genkit_ai_service import GenkitAIService
+        service = GenkitAIService()
+        
+        # Check if the service is properly configured
+        if service.genkit_available and service.api_key:
+            print("✅ Google AI service initialized successfully")
+            return True
         else:
-            print(f"⚠️ {model} setup failed, but continuing...")
+            print("⚠️ Google AI service initialization had issues")
+            return False
+            
+    except ImportError as e:
+        print(f"❌ Failed to import Google AI service: {e}")
+        return False
+    except Exception as e:
+        print(f"❌ Error testing Google AI connection: {e}")
+        return False
+
+def start_google_ai():
+    """Initialize Google AI service"""
+    print("=" * 60)
+    print("🤖 STARTING GOOGLE AI SERVICE")
+    print("=" * 60)
+    
+    # Step 1: Check API key configuration
+    if not check_google_ai_setup():
+        print("❌ Google AI setup failed")
+        print("💡 Please set GOOGLE_AI_API_KEY in your .env file")
+        print("📝 Get your API key from: https://ai.google.dev/")
+        return False
+    
+    # Step 2: Test service connection
+    if not test_google_ai_connection():
+        print("❌ Google AI connection test failed")
+        return False
     
     print("\n" + "=" * 60)
-    print("🎓 OLLAMA AI SETUP COMPLETE")
+    print("🎓 GOOGLE AI SETUP COMPLETE")
     print("=" * 60)
     print("✅ Ready to generate educational content")
-    print("🧠 Text AI: llama3:8b (memory-optimized for content generation)")
-    print("👁️ Vision AI: llava-phi3:latest (worksheet analysis)")
-    print("🌐 Service running on: http://localhost:11434")
+    print("🧠 AI Model: Google Gemini (Cloud-based, High Quality)")
+    print("🌏 Hindi Language: Optimized for Indian education")
+    print("🌐 Service: Google AI Platform")
     print("=" * 60)
     
     return True
 
-# Start Ollama before initializing the app
+# Start Google AI before initializing the app
 print("🚀 Initializing Sahayak AI Platform...")
-ollama_status = start_ollama()
+ai_status = start_google_ai()
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -188,7 +116,6 @@ logger = logging.getLogger(__name__)
 
 # Reduce logging from external libraries
 logging.getLogger("google").setLevel(logging.ERROR)
-logging.getLogger("vertexai").setLevel(logging.ERROR)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 # Create uploads directory for generated visuals
@@ -215,8 +142,9 @@ async def root():
         "version": "1.0.0",
         "docs": "/docs",
         "status": "running in educational mode",
-        "ollama_status": "available" if ollama_status else "not available",
-        "models": ["llama3:8b", "llava-phi3:latest"] if ollama_status else []
+        "ai_service": "Google AI (Gemini)",
+        "ai_status": "available" if ai_status else "not available",
+        "features": ["content generation", "Hindi support", "visual analysis", "assessments"]
     }
 
 @app.get("/health")
@@ -225,8 +153,9 @@ async def health_check():
     return {
         "status": "healthy", 
         "service": "sahayak-api",
-        "ollama_running": check_ollama_running(),
-        "models_ready": ollama_status
+        "ai_service": "Google AI",
+        "ai_ready": ai_status,
+        "google_ai_configured": check_google_ai_setup()
     }
 
 @app.get("/debug/ai-status")
@@ -234,10 +163,10 @@ async def debug_ai_status():
     """Debug endpoint to check AI service status"""
     try:
         # Import inside function to avoid potential circular import issues
-        from services.ollama_ai_service import OllamaAIService
+        from services.genkit_ai_service import GenkitAIService
         
         # Create service instance (same as routers do)
-        service = OllamaAIService()
+        service = GenkitAIService()
         
         # Test a simple generation
         test_result = await service.generate_text(
@@ -248,22 +177,23 @@ async def debug_ai_status():
         )
         
         return {
-            "ai_service": "Ollama (Local AI)",
-            "ollama_available": service.ollama_available,
-            "model_name": service.model_name,
+            "ai_service": "Google AI (Gemini)",
+            "service_available": True,
+            "model_name": getattr(service, 'model_name', 'gemini-1.5-flash'),
             "test_generation": test_result[:200] + "..." if len(test_result) > 200 else test_result,
             "service_class": str(type(service)),
             "timestamp": str(__import__('datetime').datetime.now()),
-            "startup_status": "Models started successfully" if ollama_status else "Model startup failed",
-            "models_running": ["llama3:8b", "llava-phi3:latest"] if ollama_status else []
+            "startup_status": "Google AI started successfully" if ai_status else "Google AI startup failed",
+            "api_key_configured": bool(os.getenv("GOOGLE_AI_API_KEY"))
         }
     except Exception as e:
         return {
             "error": str(e),
-            "ai_service": "Ollama (Local AI)",
+            "ai_service": "Google AI (Gemini)",
+            "service_available": False,
             "timestamp": str(__import__('datetime').datetime.now()),
-            "startup_status": "Models started successfully" if ollama_status else "Model startup failed",
-            "models_running": ["llama3:8b", "llava-phi3:latest"] if ollama_status else []
+            "startup_status": "Google AI started successfully" if ai_status else "Google AI startup failed",
+            "api_key_configured": bool(os.getenv("GOOGLE_AI_API_KEY"))
         }
 
 if __name__ == "__main__":
@@ -275,19 +205,19 @@ if __name__ == "__main__":
     print("📚 API Documentation: http://localhost:8000/docs")
     print("💊 Health Check: http://localhost:8000/health")
     print("🤖 AI Status: http://localhost:8000/debug/ai-status")
-    print("🧠 AI Service: Ollama (Local, Free, Unlimited)")
-    print("🔍 Vision Support: llava-phi3:latest (Auto-started)")
+    print("🧠 AI Service: Google AI (Gemini)")
+    print("🌏 Language Support: Hindi + English optimized")
     print("=" * 60)
     
-    if ollama_status:
-        print("✅ ALL SYSTEMS READY! Ollama models are running:")
-        print("   🧠 llama3:8b - Main AI for content generation")
-        print("   👁️ llava-phi3:latest - Vision AI for worksheet analysis")
+    if ai_status:
+        print("✅ ALL SYSTEMS READY! Google AI is configured:")
+        print("   🧠 Google Gemini - High-quality content generation")
+        print("   🌏 Hindi Language - Optimized for Indian education")
+        print("   ☁️ Cloud-based - No local model downloads needed")
     else:
-        print("⚠️ OLLAMA NOT FULLY READY:")
-        print("   📥 Install: https://ollama.ai/")
-        print("   🔧 Then run: ollama pull llama3:8b")
-        print("   🔧 Then run: ollama pull llava-phi3:latest")
+        print("⚠️ GOOGLE AI NOT READY:")
+        print("   🔑 Set GOOGLE_AI_API_KEY in .env file")
+        print("   🌐 Get API key: https://ai.google.dev/")
         print("   ⚡ Platform will work with limited AI features")
     
     print("=" * 60)

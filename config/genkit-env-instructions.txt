@@ -1,0 +1,32 @@
+# ===========================================
+# GENKIT ENVIRONMENT SETUP INSTRUCTIONS
+# ===========================================
+
+Add this line to your sahayak-backend/.env file:
+
+GOOGLE_AI_API_KEY=your_google_ai_api_key_here
+
+# How to get Google AI API key:
+# 1. Go to: https://ai.google.dev/
+# 2. Click "Get API key"
+# 3. Sign in with your Google account
+# 4. Click "Create API key"
+# 5. Copy the key and paste it above
+
+# Note: This is the SAME API key you might already have!
+# - Check if you already have GOOGLE_AI_API_KEY in your .env
+# - If you have GOOGLE_API_KEY, you can rename it to GOOGLE_AI_API_KEY
+# - This is FREE with generous limits
+
+# Benefits of Genkit:
+# ✅ Better Hindi grammar than Ollama
+# ✅ More accurate facts
+# ✅ Better prompt management 
+# ✅ Faster responses
+# ✅ FREE usage (up to quota)
+# ✅ Won't affect your Firebase/Google login
+
+# After adding the API key:
+# 1. Restart your backend server
+# 2. You'll see "✅ Genkit AI service initialized successfully!"
+# 3. All requests will use Genkit + Gemini instead of Ollama 

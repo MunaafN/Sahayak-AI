@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 import logging
-from services.ollama_ai_service import OllamaAIService
+from services.genkit_ai_service import GenkitAIService
 from services.speech_service import SpeechService
 
 router = APIRouter()
@@ -42,7 +42,7 @@ async def analyze_reading(
         
         # Initialize services
         speech_service = SpeechService()
-        ollama_ai = OllamaAIService()
+        ai_service = GenkitAIService()
         
         # Convert audio to text
         audio_content = await audio.read()
@@ -73,7 +73,7 @@ async def analyze_reading(
         """
         
         # Get AI-generated feedback
-        feedback = await ollama_ai.generate_text(
+        feedback = await ai_service.generate_text(
             analysis_prompt,
             grade_level=grade_level,
             language=language,
@@ -114,8 +114,8 @@ async def generate_reading_text(request: TextGenerationRequest):
     try:
         logger.info(f"Generating reading text for grade {request.grade_level}")
         
-        # Initialize Ollama AI service
-        ollama_ai = OllamaAIService()
+        # Initialize Genkit AI service
+        ai_service = GenkitAIService()
         
         # Define complexity levels
         complexity_map = {
@@ -159,8 +159,8 @@ async def generate_reading_text(request: TextGenerationRequest):
         Create a story or informational text that would be interesting for children to read aloud.
         """
         
-        # Generate text using Ollama AI
-        generated_text = await ollama_ai.generate_text(
+        # Generate text using Genkit AI
+        generated_text = await ai_service.generate_text(
             prompt,
             grade_level=request.grade_level,
             language=request.language,

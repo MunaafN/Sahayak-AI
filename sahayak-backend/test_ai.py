@@ -9,7 +9,7 @@ import os
 # Add the current directory to the path so we can import our modules
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from services.ollama_ai_service import OllamaAIService
+from services.genkit_ai_service import GenkitAIService
 
 async def test_ai_service():
     """Test the AI service with different frontend inputs"""
@@ -17,12 +17,12 @@ async def test_ai_service():
     print("=" * 50)
     
     # Initialize AI service
-    service = OllamaAIService()
+    service = GenkitAIService()
     
-    if not service.ollama_available:
-        print("❌ Ollama is not available. Please start Ollama first.")
-        print("💡 Run: ollama serve")
-        print("💡 Then: ollama pull llama3.1:8b")
+    if not service.genkit_available:
+        print("❌ Genkit AI is not available. Please add Google AI API key to .env file.")
+        print("💡 Add: GOOGLE_AI_API_KEY=your_api_key_here")
+        print("💡 Get API key from: https://ai.google.dev/")
         return False
     
     # Test cases mimicking frontend requests

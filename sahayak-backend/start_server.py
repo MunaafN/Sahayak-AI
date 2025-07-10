@@ -27,30 +27,28 @@ def install_dependencies():
         print(f"❌ Failed to install dependencies: {e}")
         return False
 
-def check_ollama():
-    """Check if Ollama is available"""
+def check_genkit():
+    """Check if Genkit AI is available"""
     try:
-        import requests
-        response = requests.get("http://localhost:11434/api/tags", timeout=3)
-        if response.status_code == 200:
-            models = response.json().get('models', [])
-            if models:
-                print(f"✅ Ollama is running with {len(models)} model(s)")
-                for model in models:
-                    print(f"   📚 Model: {model['name']}")
-                return True
-            else:
-                print("⚠️ Ollama is running but no models found")
-                print("💡 Run: ollama pull llama3.1:8b")
-                return False
+        # Check if Google AI API key is configured
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        api_key = os.getenv("GOOGLE_AI_API_KEY", "")
+        if api_key and api_key != "":
+            print("✅ Genkit AI service is configured and ready!")
+            print("🔑 Google AI API key found")
+            return True
         else:
-            print("⚠️ Ollama is not responding properly")
+            print("⚠️ Google AI API key not configured")
+            print("💡 Add GOOGLE_AI_API_KEY to .env file")
             return False
     except Exception as e:
-        print("⚠️ Ollama is not running")
-        print("💡 Please start Ollama first:")
-        print("   - Windows: Run Ollama.exe")
-        print("   - Then run: ollama pull llama3.1:8b")
+        print("⚠️ Genkit AI service not available")
+        print("💡 Please configure Google AI API key:")
+        print("   - Get key from: https://ai.google.dev/")
+        print("   - Add to .env: GOOGLE_AI_API_KEY=your_key_here")
         return False
 
 def start_server():
@@ -58,7 +56,7 @@ def start_server():
     print("🚀 Starting Sahayak Backend Server...")
     print("📍 URL: http://localhost:8000")
     print("📚 API Docs: http://localhost:8000/docs")
-    print("🤖 AI Service: Ollama (Local)")
+    print("🤖 AI Service: Genkit + Google Gemini")
     print("-" * 50)
     
     try:
@@ -104,8 +102,8 @@ def main():
     else:
         install_dependencies()
     
-    # Check Ollama
-    check_ollama()
+    # Check Genkit AI
+    check_genkit()
     
     # Start the server
     start_server()

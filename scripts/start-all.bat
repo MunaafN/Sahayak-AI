@@ -1,63 +1,43 @@
 @echo off
-echo ========================================
-echo SAHAYAK PLATFORM - STARTUP
-echo ========================================
-
-echo 🔍 Pre-flight Checks...
-
-REM Check backend credentials
-if not exist "sahayak-backend\sahayak-credentials.json" (
-    echo ❌ Backend Google Cloud credentials missing!
-    echo 📄 Expected: sahayak-backend\sahayak-credentials.json
-    pause
-    exit /b 1
-)
-echo ✅ Backend Google Cloud credentials found
-
-REM Check/Create backend .env
-if not exist "sahayak-backend\.env" (
-    echo 📋 Creating backend environment configuration...
-    copy "config\backend-env-actual.txt" "sahayak-backend\.env"
-)
-echo ✅ Backend environment configured
-
-REM Check/Create frontend .env  
-if not exist "sahayak-frontend\.env" (
-    echo 📋 Creating frontend environment configuration...
-    call scripts\create-frontend-env.bat
-)
-echo ✅ Frontend environment configured
-
+title SAHAYAK FULL PLATFORM STARTUP
 echo.
-echo 🤖 Initializing AI Models...
-echo 📥 Starting llava-phi3 for vision-based worksheets...
-start /min cmd /c "ollama run llava-phi3 & exit"
+echo ============================================
+echo  🚀 SAHAYAK FULL PLATFORM STARTUP  
+echo ============================================
+echo.
 
-echo ⏳ Waiting for AI model initialization...
+echo 📋 Starting Complete Sahayak Platform...
+echo.
+
+echo 🔧 Platform Components:
+echo    🎯 Frontend: React + Vite (Port 5173)
+echo    🔧 Backend: FastAPI (Port 8000)  
+echo    🤖 AI Service: Genkit + Google Gemini
+echo    🔐 Authentication: Firebase Auth
+echo.
+
+echo 📋 Step 1: Starting Backend Server
+echo.
+start "Backend Server" cmd /k "cd sahayak-backend && python main.py"
+
+echo ⏳ Waiting for backend to initialize...
 timeout /t 3 /nobreak >nul
 
 echo.
-echo 🚀 Starting Sahayak Platform Services...
-echo ================================
-
-echo 🔧 Starting Backend Server...
-start "Sahayak Backend" cmd /c scripts\start-backend.bat
-
-echo ⏳ Waiting for backend to initialize...
-timeout /t 8 /nobreak >nul
-
-echo 🎨 Starting Frontend Server...
-start "Sahayak Frontend" cmd /c scripts\start-frontend.bat
+echo 📋 Step 2: Starting Frontend Application
+echo.
+start "Frontend App" cmd /k "cd sahayak-frontend && npm run dev"
 
 echo.
-echo ✅ Both servers are starting...
-echo 📍 Backend: http://localhost:8000
-echo 📍 Frontend: http://localhost:5173
-echo 📚 API Docs: http://localhost:8000/docs
-echo 🔐 Google Auth: READY
-echo 🤖 AI Models: READY
-echo ========================================
-echo 💡 Both servers will open in separate windows
-echo 💡 Close this window to keep servers running
-echo ========================================
+echo ✅ SAHAYAK PLATFORM STARTUP COMPLETE!
+echo.
+echo 📍 Access Points:
+echo    🌐 Frontend: http://localhost:5173
+echo    🔧 Backend API: http://localhost:8000  
+echo    📚 API Docs: http://localhost:8000/docs
+echo.
+echo 🔑 Important: Ensure you have GOOGLE_AI_API_KEY in your .env files
+echo 📖 Get API key from: https://ai.google.dev/
+echo.
+
 pause

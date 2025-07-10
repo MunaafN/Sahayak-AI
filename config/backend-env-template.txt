@@ -62,6 +62,9 @@ MAX_CONTENT_LENGTH=2000
 DEFAULT_TEMPERATURE=0.7
 DEFAULT_MAX_TOKENS=1000
 
+# ---- STABILITY AI IMAGE GENERATION ----
+STABILITY_API_KEY=your-stability-ai-api-key-here
+
 # ================================
 # DATABASE CONFIGURATION
 # ================================

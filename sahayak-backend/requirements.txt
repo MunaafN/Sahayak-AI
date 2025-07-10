@@ -9,8 +9,8 @@ python-multipart==0.0.6
 pydantic==2.5.0
 python-dotenv==1.0.0
 
-# ---- GOOGLE FREE AI SERVICE ----
-google-generativeai
+# ---- GOOGLE AI SERVICE ----
+google-generativeai==0.3.2
 
 # ---- HTTP CLIENTS ----
 httpx==0.25.2
